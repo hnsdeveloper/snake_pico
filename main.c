@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
-
-
+#include "ssd1306.h"
 
 int main()
 {

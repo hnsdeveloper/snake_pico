@@ -33,6 +33,8 @@ project(snake_pico C CXX ASM)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
+add_subdirectory(tp/pico_ssd1306)
+
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(snake_pico main.c )
@@ -55,7 +57,7 @@ target_include_directories(snake_pico PRIVATE
 
 # Add any user requested libraries
 target_link_libraries(snake_pico 
-        
+        ssd1306
         )
 
 pico_add_extra_outputs(snake_pico)
