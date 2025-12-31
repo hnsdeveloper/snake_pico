@@ -37,7 +37,7 @@ add_subdirectory(tp/pico_ssd1306)
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(snake_pico main.c )
+add_executable(snake_pico main.c src/doublell.c src/io.c src/snake.c)
 
 pico_set_program_name(snake_pico "snake_pico")
 pico_set_program_version(snake_pico "0.1")
@@ -48,7 +48,7 @@ pico_enable_stdio_usb(snake_pico 1)
 
 # Add the standard library to the build
 target_link_libraries(snake_pico
-        pico_stdlib)
+        pico_stdlib pico_rand)
 
 # Add the standard include files to the build
 target_include_directories(snake_pico PRIVATE
