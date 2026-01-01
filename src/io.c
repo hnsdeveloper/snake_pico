@@ -256,8 +256,9 @@ void display_draw_text_justified_left(uint32_t x, uint32_t y, const char* string
     // about the font, and not raw bytes.
     uint8_t font_width = 5;
     uint8_t font_height = 8;
+    uint8_t font_spacing = 1;
 
-    uint32_t characters_per_line = display_width() / font_width;
+    uint32_t characters_per_line = display_width() / (font_width + font_spacing);
     size_t buffer_size = characters_per_line + 1;
     char* buffer = malloc(buffer_size + 1);
     const char* str = string;
