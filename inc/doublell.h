@@ -35,7 +35,7 @@ void in_place_map_from_tail(DoubleLinkedList* list, in_place_map_function fn, vo
 
 /// @brief Function for reducing. The first argument is the data inside the node of the linked list. The second is the accumulator.
 /// The third is for extra data.
-typedef void* (*reduce_function)(const void*, void*, void*);
+typedef void (*reduce_function)(const void*, void*, void*);
 
 /// @brief Reduce function. Will do it from the tail. Will return immediately if any argument except extra_data is null.
 /// @param list The list itself.

@@ -37,7 +37,8 @@ add_subdirectory(tp/pico_ssd1306)
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(snake_pico main.c src/doublell.c src/io.c src/snake.c)
+add_executable(snake_pico main.c src/doublell.c src/io.c src/snake.c src/state.c src/game_start_state.c 
+                                 src/game_play_state.c src/pause_state.c src/game_over_state.c)
 
 pico_set_program_name(snake_pico "snake_pico")
 pico_set_program_version(snake_pico "0.1")

@@ -52,4 +52,9 @@ void destroy_snake(Snake* snake);
 /// @param apple The Apple instance.
 void destroy_apple(Apple* apple);
 
+/// @brief Counts how many parts there are in a Snake instance.
+/// @param snake The snake instance.
+/// @return The parts count.
+uint32_t snake_parts_count(Snake* snake);
+
 #endif

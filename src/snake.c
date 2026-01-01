@@ -1,8 +1,9 @@
+#include <string.h>
+#include <stdint.h>
 #include "inc/snake.h"
 #include "inc/doublell.h"
-#include <stdint.h>
 #include "pico/rand.h"
-#include <string.h>
+#include <stdlib.h>
 
 struct Snake {
     DoubleLinkedList* parts_list;
@@ -70,16 +71,15 @@ Apple* spawn_apple(Snake* snake, uint32_t width, uint32_t height) {
     if(apple == NULL)
         return NULL;
 
+    if(snake_parts_count(snake) >= width * height)
+        return NULL;
+
     bool overlaps;
-    // Will become an infinite loop if all positions are taken.
-    // Not sure if it should check for it here or the caller should be responsible for enforcing it.
-    // Maybe checking it twice wouldn't kill anyone.
-    // TODO : decide about it.
     do {
         overlaps = false;
         apple->x = get_rand_32() % width;
         apple->y = get_rand_32() % height;
-        reduce_from_tail(&(snake->parts_list), &check_apple_overlap_function, &overlaps, apple);
+        reduce_from_tail(snake->parts_list, check_apple_overlap_function, &overlaps, apple);
     } while(overlaps);
 
     return apple;
@@ -90,7 +90,7 @@ int has_snake_overlapped_apple(Snake* snake, Apple* apple) {
         return -1;
     
     bool overlaps = false;
-    reduce_from_tail(&(snake->parts_list), &check_apple_overlap_function, &overlaps, apple);
+    reduce_from_tail(snake->parts_list, check_apple_overlap_function, &overlaps, apple);
     return overlaps;    
 }
 
@@ -130,13 +130,11 @@ void move_snake(Snake* snake, Direction direction) {
     if(snake == NULL)
         return;
     
-    DoubleLinkedList* snake_linked_list = snake->parts_list;
-
     ExtraData update_data;
     update_data.direction = direction;
     update_data.is_first = true;
 
-    in_place_map_from_tail(snake_linked_list, &update_position_function, &update_data);
+    in_place_map_from_tail(snake->parts_list, &update_position_function, &update_data);
 }
 
 void check_collision_function(const void* position,void* acc, void* extra_data) {
@@ -168,7 +166,7 @@ int has_snake_collided(Snake* snake, uint32_t width, uint32_t height) {
     if(!is_valid_width_and_height(width,height))
         return -1;
 
-    Point* head_position = (Point*)(get_head(&(snake->parts_list)));
+    Point* head_position = (Point*)(get_head(snake->parts_list));
 
     if(head_position == NULL)
         return -1;
@@ -178,16 +176,16 @@ int has_snake_collided(Snake* snake, uint32_t width, uint32_t height) {
     extra_data.is_first = true;
     extra_data.point = *head_position;
 
-    reduce_from_tail(&(snake->parts_list), &check_collision_function, &result, &extra_data);
+    reduce_from_tail(snake->parts_list, &check_collision_function, &result, &extra_data);
     
     return result;
 }
 
 bool grow_snake(Snake* snake) {
     if(snake == NULL)
-        return;
+        return false;
     Point p;
-    return prepend_data(&snake->parts_list, &p, sizeof(Point));
+    return prepend_data(snake->parts_list, &p, sizeof(Point));
 }
 
 void destroy_snake(Snake* snake) {
@@ -200,4 +198,18 @@ void destroy_snake(Snake* snake) {
 void destroy_apple(Apple* apple) {
     if(apple != NULL)
         free(apple);
+}
+
+
+void counter_function(const void* data, void* accumulator, void* extra_data) {
+    uint32_t* acc = (uint32_t*)(accumulator);
+    *acc += 1;
+}
+
+uint32_t snake_parts_count(Snake* snake) {
+    uint32_t acc = 0;
+    if(snake != NULL) {
+        reduce_from_tail(snake->parts_list, &counter_function, &acc, NULL);
+    }
+    return acc;
 }
