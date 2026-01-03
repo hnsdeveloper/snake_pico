@@ -7,7 +7,8 @@ typedef enum Direction {
     UP,
     RIGHT,
     DOWN,
-    LEFT
+    LEFT,
+    INVALID_DIRECTION
 } Direction;
 
 typedef struct Point {

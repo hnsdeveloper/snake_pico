@@ -1,9 +1,11 @@
 #ifndef _STATE_H_
 #define _STATE_H_
 
+#include <stdint.h>
+
 typedef struct State State;
 
-typedef void (*state_update_fn)(State*);
+typedef void (*state_update_fn)(State*, uint64_t);
 typedef State* (*next_state_fn)(State*);
 typedef void (*destroy_state_fn)(State*);
 typedef void (*state_draw_fn)(State*);
@@ -17,8 +19,9 @@ struct State {
 };
 
 /// @brief Runs an update cycle on a state.
+/// @brief Time delta since last frame.
 /// @param state The state to run the update cycle.
-void update_state(State* state);
+void update_state(State* state, uint64_t delta);
 
 /// @brief Determines the next state. The function manages the destruction of the previous state if needed.
 /// @param state The managed state. 

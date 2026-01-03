@@ -18,8 +18,8 @@ Snake* spawn_snake(uint32_t width, uint32_t height);
 /// @param snake A pointer to a Snake instance.
 /// @param width The width. Shouldn't exceed INT32_MAX. Also, width * height shouldn't exceed INT32_MAX
 /// @param height The height. Shouldn't exceed INT32_MAX.
-/// @return An instance to an Apple on success or NULL on failure.
-Apple* spawn_apple(Snake* snake, uint32_t width, uint32_t height);
+/// @return An apple with valid positions, otherwise it will be at -1, -1
+Apple spawn_apple(Snake* snake, uint32_t width, uint32_t height);
 
 /// @brief Moves a Snake to a direction.
 /// @param snake The snake instance.
@@ -56,5 +56,11 @@ void destroy_apple(Apple* apple);
 /// @param snake The snake instance.
 /// @return The parts count.
 uint32_t snake_parts_count(Snake* snake);
+
+/// @brief Draws the game board.
+/// @param snake The snake to be drawn.
+/// @param apple The apple to be drawn.
+/// @param side_size How many blocks there are in a side of the game board.
+void draw_game(Snake* snake, Apple* apple, uint32_t side_size);
 
 #endif

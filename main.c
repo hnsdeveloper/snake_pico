@@ -3,6 +3,7 @@
 #include "inc/io.h"
 #include "inc/state.h"
 #include "inc/game_start_state.h"
+#include "inc/game_play_state.h"
 
 void error_message_loop(const char* message) {
     while(true) {
@@ -20,18 +21,25 @@ int main()
         error_message_loop("Failed to initialize IO. Check buttons and display cabling.");
     }
 
-    State* s = create_game_start_state();
+    //State* s = create_game_start_state();
+    //State* s = NULL;
 
+    State* s = create_game_play_state(16);
+
+    
     if(s == NULL) {
         error_message_loop("Failed to create game start state.");
     }
     
+    uint64_t last = time_us_64();
     while(true) {
-        update_state(s);
+        uint64_t now = time_us_64();
+        update_state(s, now - last);
         display_clear();
         draw_state(s);
         display_show();
         s = next_state(s);
+        last = now;
     }
 
     return 0;

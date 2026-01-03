@@ -1,9 +1,9 @@
 #include "inc/state.h"
 #include <stdlib.h>
 
-void update_state(State* state) {
+void update_state(State* state, uint64_t delta) {
     if(state != NULL)
-        state->update_fn(state);
+        state->update_fn(state, delta);
 }
 
 State* next_state(State* state) {

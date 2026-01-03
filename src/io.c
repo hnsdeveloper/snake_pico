@@ -15,73 +15,59 @@
 #define I2C_PIN_1 (uint)(16)
 #define I2C_PIN_2 (uint)(17)
 
-struct ButtonState {
-    bool pressed[4];
-};
-
-ButtonState* volatile current_frame_state;
-ButtonState* volatile next_frame_state;
 ssd1306_t* display_instance;
-uint32_t pixels_per_side;
-
+Event* volatile events;
 
 /// @brief Callback for button presses.
 /// @param gpio The gpio pin that triggered the callback.
 /// @param events The event of the callback.
-void button_callback(uint gpio, uint32_t events) {
-    // No problem if we start syncing from the first button press
-    static uint64_t last_execution = 0;
-    uint64_t now = time_us_64();
-
-    uint64_t diff_us;
-
-    if (now > last_execution) 
-        diff_us = now - last_execution;
-    else 
-        diff_us = UINT64_MAX - last_execution + now;
+void button_callback(uint gpio, uint32_t event) {
+    Event* e = malloc(sizeof(Event));
+    e->next_event = NULL;
     
-    last_execution = now;
+    if(event & GPIO_IRQ_EDGE_RISE) {
+        printf("Rise edge detected.\n");
+        e->type = BUTTON_PRESS;
+    } else if (event & GPIO_IRQ_EDGE_FALL) { // GPIO_IRQ_EDGE_FALL
+        printf("Rise edge fall.\n");
+        e->type = BUTTON_RELEASE;
+    }  
+        
 
-    // 1000 us in a MS
-    if(diff_us >= FRAMETIME_US) {
-        // If the input didn't get consumed, we don't care
-        if(current_frame_state != NULL)
-            destroy_button_state(current_frame_state);
-        current_frame_state = next_frame_state;
-        next_frame_state = NULL;
-    }
+    if(gpio == UP_BUTTON_PIN) 
+        e->event_data.button = BUTTON_UP;
+    if(gpio == RIGHT_BUTTON_PIN)
+        e->event_data.button = BUTTON_RIGHT;
+    if(gpio == DOWN_BUTTON_PIN)
+        e->event_data.button = BUTTON_DOWN;
+    if(gpio == LEFT_BUTTON_PIN)
+        e->event_data.button = BUTTON_LEFT;
 
-    if(next_frame_state == NULL) {
-        next_frame_state = malloc(sizeof(ButtonState));
-        memset(next_frame_state, 0, sizeof(ButtonState));
-    }
-
-    if(events & GPIO_IRQ_EDGE_RISE) {
-        next_frame_state->pressed[BUTTON_UP] = (gpio == UP_BUTTON_PIN) | next_frame_state->pressed[BUTTON_UP];
-        next_frame_state->pressed[BUTTON_RIGHT] = (gpio == RIGHT_BUTTON_PIN) | next_frame_state->pressed[BUTTON_RIGHT];
-        next_frame_state->pressed[BUTTON_DOWN] = (gpio == DOWN_BUTTON_PIN) | next_frame_state->pressed[BUTTON_DOWN];
-        next_frame_state->pressed[BUTTON_LEFT] = (gpio == LEFT_BUTTON_PIN) | next_frame_state->pressed[BUTTON_LEFT];
+    if(events == NULL) {
+        events = e;
+    } else {
+        Event* i = events;
+        while(i->next_event != NULL)
+            i = i->next_event;
+        i->next_event = e;
     }
 }
 
-ButtonState* get_current_frame_button_states() {
-    // We need to disable interrupts as if a button press happens while here,
-    // we could end up using an invalid pointer.
+Event* read_events() {
     uint32_t status = save_and_disable_interrupts();
-    ButtonState* ret = current_frame_state;
-    current_frame_state = NULL;
+    Event* e = events;
+    events = NULL;
     restore_interrupts(status);
-    return ret;
+    return e;
 }
 
-void destroy_button_state(ButtonState* buttonstate) {
-    free(buttonstate);
-}
-
-bool is_button_pressed(ButtonState* state, Button b) {
-    if (b < INVALID && b >= 0)
-        return state->pressed[b];
-    return false;
+/// @brief Destroys an event, freeing any used memory. DOES NOT DESTROY THE EVENTS POINTED BY next_event. Each event
+/// should be destroyed individually.
+/// @param event The event to be destroyed.
+void destroy_event(Event* event) {
+    if(event != NULL) {
+        free(event);
+    }
 }
 
 ssd1306_t* init_display(uint32_t width, uint32_t height) {
@@ -111,12 +97,9 @@ int init_io(uint32_t width, uint32_t height, uint32_t pixels_block_per_shortest_
     if(pixels_block_per_shortest_side & (pixels_block_per_shortest_side - 1))
         return 1;
     
-    pixels_per_side = pixels_block_per_shortest_side;
-    
     printf("Initializing button pins.\n");
 
-    current_frame_state = NULL;
-    next_frame_state = NULL;
+    events = NULL;
 
     uint arr[] = {UP_BUTTON_PIN, RIGHT_BUTTON_PIN, DOWN_BUTTON_PIN, LEFT_BUTTON_PIN};
 
@@ -124,7 +107,7 @@ int init_io(uint32_t width, uint32_t height, uint32_t pixels_block_per_shortest_
         gpio_init(arr[i]);
         gpio_set_dir(arr[i], GPIO_IN);
         gpio_pull_down(arr[i]);
-        gpio_set_irq_enabled_with_callback(arr[i], GPIO_IRQ_EDGE_RISE, true, &button_callback);
+        gpio_set_irq_enabled_with_callback(arr[i], GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &button_callback);
     }
 
     printf("Initializing display.\n");
@@ -139,22 +122,6 @@ int init_io(uint32_t width, uint32_t height, uint32_t pixels_block_per_shortest_
     return 0;
 }
 
-uint32_t display_block_unit_width() {
-    uint32_t x_dim;
-
-    if(display_instance->width < display_instance->height) 
-        return pixels_per_side;
-
-    return display_instance->width/display_instance->height * pixels_per_side;
-}
-
-uint32_t display_block_unit_height() {
-    if(display_instance->height < display_instance->width) 
-        return pixels_per_side;
-    
-    return display_instance->height/display_instance->width * pixels_per_side;
-}
-
 uint32_t display_width() {
     return display_instance->width;
 }
@@ -163,20 +130,17 @@ uint32_t display_height() {
     return display_instance->height;
 }
 
-void display_draw_block(uint32_t x, uint32_t y) {
-    ssd1306_draw_square(display_instance, x, y, display_block_unit_width(), display_block_unit_height());
+void display_draw_block(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+    ssd1306_draw_square(display_instance, x, y, width, height);
 }
  
-void display_draw_checkerboard_block(uint32_t x, uint32_t y) {
-    uint32_t x_size = display_block_unit_width();
-    uint32_t y_size = display_block_unit_height();
-    
+void display_draw_checkerboard_block(uint32_t x, uint32_t y, uint32_t x_size, uint32_t y_size) {
     for(uint32_t i = 0; i <  y_size; ++i) {
         bool draw = !(i & 1);
         for(size_t j = 0; j < x_size; ++j) {
             if(draw)
                 ssd1306_draw_pixel(display_instance, x + j, y + i);
-            draw = ~draw;
+            draw = !draw;
         }
     }
 }
@@ -195,7 +159,7 @@ const char* fill_buffer_with_string_no_word_truncate(const char* src, char* buff
 
     size_t i = 0;
     // The last byte is reserved for the null character
-    while(src[i] && i < buffer_size - 1) {
+    while(i < buffer_size - 1 && src[i]) {
         buffer[i] = src[i];
         ++i;
     }

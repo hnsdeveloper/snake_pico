@@ -30,7 +30,9 @@ Node* create_node(void* data, size_t data_size) {
     
     Node* p = malloc(sizeof(Node));
     if(p) {
-        memset(p, 0, sizeof(Node));
+        p->data = NULL;
+        p->next = NULL;
+        p->prev = NULL;
         void* new_data = malloc(data_size);
         if(new_data == NULL) {
             free(p);
@@ -54,7 +56,8 @@ void destroy_node(Node* node) {
 DoubleLinkedList* create_linked_list() {
     DoubleLinkedList* p = malloc(sizeof(DoubleLinkedList));
     if(p != NULL) {
-        memset(p, 0, sizeof(DoubleLinkedList));
+        p->head = NULL;
+        p->tail = NULL;
     }
 
     return p;
@@ -78,7 +81,7 @@ bool prepend_data(DoubleLinkedList* list, void* data, size_t data_size) {
         return false;
 
     n->next = list->head;
-    if(list->head)
+    if(list->head != NULL)
         list->head->prev = n;
     else {
         list->tail = n;
@@ -119,4 +122,14 @@ void* get_tail(DoubleLinkedList* list) {
     if(list != NULL && list->tail != NULL)
         return list->tail->data;
     return NULL;
+}
+
+void for_each(DoubleLinkedList* list, for_each_function fn, void* extra_data) {
+    if(list != NULL) {
+        Node* n = list->head;
+        while(n != NULL) {
+            fn(n->data, extra_data);
+            n = n->next;
+        }
+    }
 }

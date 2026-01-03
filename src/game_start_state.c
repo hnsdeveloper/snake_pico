@@ -1,25 +1,65 @@
 #include <stdlib.h>
+#include <string.h>
 #include "inc/game_start_state.h"
 #include "inc/game_play_state.h"
 #include "inc/io.h"
 
-void update_game_start(State* state) {
-    ButtonState* buttons = get_current_frame_button_states();
 
-    // If all buttons are pressed, then we start the game
-    if(is_button_pressed(buttons, BUTTON_UP) && is_button_pressed(buttons, BUTTON_RIGHT) && 
-       is_button_pressed(buttons, BUTTON_DOWN) && is_button_pressed(buttons, BUTTON_LEFT)) {
-        State* s = create_game_play_state();
-        state->extra_data = s;
+#define PLAYABLE_SIDE 16
+
+typedef struct GameStartData {
+    bool button_state[4];
+    State* next_state;
+} GameStartData;
+
+void update_game_start(State* state, uint64_t delta) {
+    (void)(delta);
+    if(state == NULL)
+        return;
+    
+    Event* events = read_events();
+    GameStartData* data = (GameStartData*)(state->extra_data);
+
+    Event* e = events;
+    while(e != NULL) {
+        if(e->type == BUTTON_PRESS)
+            data->button_state[e->event_data.button] = true;
+        if(e->type == BUTTON_RELEASE)
+            data->button_state[e->event_data.button] = false;
+        e = e->next_event;
+    }
+
+    bool all_pressed = true;
+    for(size_t i = 0; i < sizeof(data->button_state)/data->button_state[0]; ++i) {
+        all_pressed = all_pressed && data->button_state[i];
+    }
+
+    if(all_pressed) {
+        data->next_state = create_game_play_state(PLAYABLE_SIDE);
+    }
+
+    // Destroys all events
+    Event* i = events;
+    while(i != NULL) {
+        Event* prev = i;
+        i = prev->next_event;
+        destroy_event(i);
     }
 }
 
 State* next_state_start(State* state) {
-    State* s = (State*)(state->extra_data);
-    if(s != NULL) {
-        state->extra_data = NULL;
-        return s;
-    }
+    if(state == NULL)
+        return NULL;
+
+    GameStartData* data = (GameStartData*)(state->extra_data);
+
+    // This doesn't sound right, this invariant should never hold.
+    if(data == NULL)
+        return NULL; // We return null just to point it out then
+    
+    if(data->next_state)
+        return data->next_state;
+    
     return state;
 }
 
@@ -37,11 +77,23 @@ void draw_state_start(State* state) {
 
 State* create_game_start_state() {
     State* s = malloc(sizeof(State));
+    if(s == NULL)
+        return NULL;
+
+    GameStartData* data = malloc(sizeof(GameStartData));
+    
+    if(data != NULL) {
+        memset(data, 0, sizeof(GameStartData));
+        s->extra_data = data;
+    } else {
+        free(s);
+        return NULL;
+    }
+    
     s->update_fn = &update_game_start;
     s->next_state_fn = &next_state_start;
     s->destroy_state_fn = &destroy_state_start;
     s->state_draw_fn = &draw_state_start;
-    s->extra_data = NULL;
-
+    
     return s;
 }
