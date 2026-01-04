@@ -21,11 +21,7 @@ int main()
         error_message_loop("Failed to initialize IO. Check buttons and display cabling.");
     }
 
-    //State* s = create_game_start_state();
-    //State* s = NULL;
-
-    State* s = create_game_play_state(16);
-
+    State* s = create_game_start_state();
     
     if(s == NULL) {
         error_message_loop("Failed to create game start state.");

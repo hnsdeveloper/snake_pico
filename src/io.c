@@ -26,10 +26,8 @@ void button_callback(uint gpio, uint32_t event) {
     e->next_event = NULL;
     
     if(event & GPIO_IRQ_EDGE_RISE) {
-        printf("Rise edge detected.\n");
         e->type = BUTTON_PRESS;
     } else if (event & GPIO_IRQ_EDGE_FALL) { // GPIO_IRQ_EDGE_FALL
-        printf("Rise edge fall.\n");
         e->type = BUTTON_RELEASE;
     }  
         

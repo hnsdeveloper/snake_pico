@@ -92,8 +92,6 @@ int has_snake_overlapped_apple(Snake* snake, Apple* apple) {
     
     Point* snake_head = (Point*)(get_tail(snake->parts_list));
 
-
-    printf("snake x : %d, snake y : %d, apple x : %d, apple y : %d");
     if(snake_head->x == apple->x && snake_head->y == apple->y)
         return 1;
 
@@ -142,7 +140,10 @@ void move_snake(Snake* snake, Direction direction) {
     ExtraData update_data;
     update_data.is_first = true;
 
-    if(direction == UP && snake->last_direction == DOWN) {
+    if(snake_parts_count(snake) == 1) {
+        update_data.direction = direction;
+        snake->last_direction = direction;
+    } else if(direction == UP && snake->last_direction == DOWN) {
         update_data.direction = DOWN;
     } else if (direction == RIGHT && snake->last_direction == LEFT) {
         update_data.direction = LEFT;
@@ -154,8 +155,6 @@ void move_snake(Snake* snake, Direction direction) {
         update_data.direction = direction;
         snake->last_direction = direction;
     }
-
-    update_data.direction = direction;
 
     snake->tail_last_position = *(Point*)(get_head(snake->parts_list));
     in_place_map_from_tail(snake->parts_list, &update_position_function, &update_data);
@@ -176,7 +175,6 @@ void check_collision_function(const void* position,void* acc, void* extra_data) 
 
     if(current_part_position->x == data->point.x && current_part_position->y == data->point.y)
         *result = true;
-
 }
 
 int has_snake_collided(Snake* snake, uint32_t width, uint32_t height) {
@@ -185,18 +183,18 @@ int has_snake_collided(Snake* snake, uint32_t width, uint32_t height) {
     if(!is_valid_width_and_height(width,height))
         return -1;
 
-    Point* head_position = (Point*)(get_head(snake->parts_list));
+    Point* snake_head_position = (Point*)(get_tail(snake->parts_list));
 
-    if(head_position == NULL)
+    if(snake_head_position == NULL)
         return -1;
 
     bool result = 0;
-    result |= head_position->x >= width;
-    result |= head_position->y >= height;
+    result |= snake_head_position->x >= width;
+    result |= snake_head_position->y >= height;
 
     ExtraData extra_data;
     extra_data.is_first = true;
-    extra_data.point = *head_position;
+    extra_data.point = *snake_head_position;
 
     reduce_from_tail(snake->parts_list, &check_collision_function, &result, &extra_data);
     

@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "inc/game_start_state.h"
 #include "inc/game_play_state.h"
 #include "inc/io.h"
-
 
 #define PLAYABLE_SIDE 16
 
@@ -29,12 +29,13 @@ void update_game_start(State* state, uint64_t delta) {
         e = e->next_event;
     }
 
-    bool all_pressed = true;
+    size_t pressed_count = 0;
     for(size_t i = 0; i < sizeof(data->button_state)/data->button_state[0]; ++i) {
-        all_pressed = all_pressed && data->button_state[i];
+        if(data->button_state[i] == true)
+            ++pressed_count;
     }
 
-    if(all_pressed) {
+    if(pressed_count > 1) {
         data->next_state = create_game_play_state(PLAYABLE_SIDE);
     }
 
@@ -57,8 +58,12 @@ State* next_state_start(State* state) {
     if(data == NULL)
         return NULL; // We return null just to point it out then
     
-    if(data->next_state)
-        return data->next_state;
+    if(data->next_state) {
+        State* s = data->next_state;
+        data->next_state = NULL;
+        return s;
+    }
+        
     
     return state;
 }
@@ -72,7 +77,7 @@ void destroy_state_start(State* state) {
 }
 
 void draw_state_start(State* state) {
-    display_draw_text_justified_left(0,0, "Press 4 buttons to play, 4 buttons to pause when playing.");
+    display_draw_text_justified_left(0,0, "Press more than 1 button to play, and when playing, more than 1 button to pause.");
 }
 
 State* create_game_start_state() {

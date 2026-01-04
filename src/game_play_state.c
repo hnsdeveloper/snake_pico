@@ -50,6 +50,9 @@ void update_game_play(State* state, uint64_t delta) {
             i = i->next_event;
         }
     }
+
+    if(data->last_button == INVALID)
+        return;
     
     bool all_pressed = true;
     for(size_t i = 0; i < sizeof(data->button_state)/sizeof(data->button_state[0]); ++i) {
@@ -76,20 +79,13 @@ void update_game_play(State* state, uint64_t delta) {
                 move_snake(data->snake, LEFT);
                 break;
             default: 
-                // It could happen that it is INVALID due to previous inputs not processed
-                // In such case, we call move still, as the own snake might store the last direction it moved.
-                // If it doesn't store anything, than it means that we are in the first input of the game, 
-                // and as such nothing should produce any effects.
-                printf("Invalid button input.\n");
-                move_snake(data->snake, INVALID_DIRECTION);
+                break;
         }
-        
     }
 
     if(has_snake_collided(data->snake, data->side_size, data->side_size)) {
-        
+        // TODO: Game over.
     } else if(has_snake_overlapped_apple(data->snake, &(data->apple)) > 0) {
-        printf("Here!");
         grow_snake(data->snake);
         if(snake_parts_count(data->snake) == data->side_size * data->side_size) {
             // TODO: Game over.
@@ -149,8 +145,6 @@ State* create_game_play_state(uint32_t gameplay_area_side) {
     
     State* s = malloc(sizeof(State));
 
-    
-
     if(s == NULL)
         return NULL;
 
@@ -159,7 +153,6 @@ State* create_game_play_state(uint32_t gameplay_area_side) {
         free(s);
         return NULL;
     }    
-
 
     memset(data, 0, sizeof(GamePlayStateData));
     data->pause_state = NULL;
