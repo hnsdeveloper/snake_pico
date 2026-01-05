@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "inc/snake.h"
 #include "inc/game_play_state.h"
+#include "inc/pause_state.h"
 #include "inc/io.h"
 
 // I could make it such that there is a difficulty selector... maybe I do it if I feel like.
@@ -12,12 +13,12 @@ typedef struct GamePlayStateData {
     uint64_t acc_delta_time; // Accumulator for time delta.
     uint64_t min_acc_delta_time; // The minimum the accumulator should be to process the game such as moving the snake. Changes over time.
     Apple apple;
-    State* pause_state;
+    State* next_state;
     Snake* snake;
     uint32_t side_size;
     Button last_button;
     bool button_state[4]; // For checking if it should pause
-
+    bool is_next_state_pause;
 } GamePlayStateData;
 
 
@@ -54,13 +55,17 @@ void update_game_play(State* state, uint64_t delta) {
     if(data->last_button == INVALID)
         return;
     
-    bool all_pressed = true;
+    size_t press_count = 0;
     for(size_t i = 0; i < sizeof(data->button_state)/sizeof(data->button_state[0]); ++i) {
-        all_pressed = all_pressed && data->button_state[i];
+        if(data->button_state[i] == true) {
+            ++press_count;
+        }
     }
 
-    if(all_pressed) {
-        // Switch to pause state...
+    if(press_count > 1) {
+        data->next_state = create_pause_state(state);
+        data->is_next_state_pause = true;
+        return;
     }
 
     if(data->acc_delta_time >= data->min_acc_delta_time) {
@@ -109,9 +114,11 @@ State* next_state_game_play(State* state) {
 
     GamePlayStateData* data = (GamePlayStateData*)(state->extra_data);
 
-    if(data->pause_state != NULL) {
-        State* s = data->pause_state;
-        data->pause_state = NULL;
+    if(data->next_state != NULL) {
+        State* s = data->next_state;
+        data->next_state = NULL;
+        if(data->is_next_state_pause)
+            state->extra_data = NULL;
         return s;
     }
 
@@ -124,8 +131,8 @@ void destroy_state_game_play(State* state) {
             GamePlayStateData* data = (GamePlayStateData*)(state->extra_data);
             if(data->snake != NULL)
                 destroy_snake(data->snake);
-            if(data->pause_state != NULL)
-                destroy_state(data->pause_state);
+            if(data->next_state != NULL)
+                destroy_state(data->next_state);
             free(data);
         }
         free(state);
@@ -155,10 +162,11 @@ State* create_game_play_state(uint32_t gameplay_area_side) {
     }    
 
     memset(data, 0, sizeof(GamePlayStateData));
-    data->pause_state = NULL;
+    data->next_state = NULL;
     data->last_button = INVALID;
     data->side_size = gameplay_area_side;
     data->min_acc_delta_time = MIN_MOVE_ACC;
+    data->is_next_state_pause = false;
     Snake* snake = spawn_snake(data->side_size, data->side_size);
     
     if(snake == NULL) {

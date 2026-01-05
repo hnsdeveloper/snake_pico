@@ -10,7 +10,6 @@ void error_message_loop(const char* message) {
         printf("%s\n", message);
         sleep_ms(1000);
     }
-    
 }
 
 int main()
