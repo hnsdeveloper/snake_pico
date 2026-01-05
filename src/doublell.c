@@ -1,4 +1,5 @@
 #include "inc/doublell.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -13,7 +14,6 @@ typedef struct Node {
     void* data;
 } Node;
 
-
 /// @brief Creates a node, by copying the data pointed by data.
 /// @param data The data the node will contain. Must be non null.
 /// @param data_size The size of the data the node will contain. Must be > 0.
@@ -25,20 +25,19 @@ Node* create_node(void* data, size_t data_size);
 void destroy_node(Node* node);
 
 Node* create_node(void* data, size_t data_size) {
-    if(data == NULL || data_size == 0)
-        return NULL;
-    
+    if (data == NULL || data_size == 0) return NULL;
+
     Node* p = malloc(sizeof(Node));
-    if(p) {
+    if (p) {
         p->data = NULL;
         p->next = NULL;
         p->prev = NULL;
         void* new_data = malloc(data_size);
-        if(new_data == NULL) {
+        if (new_data == NULL) {
             free(p);
             p = NULL;
         } else {
-            memcpy(new_data,data, data_size);
+            memcpy(new_data, data, data_size);
             p->data = new_data;
         }
     }
@@ -47,7 +46,7 @@ Node* create_node(void* data, size_t data_size) {
 }
 
 void destroy_node(Node* node) {
-    if(node != NULL) {
+    if (node != NULL) {
         free(node->data);
         free(node);
     }
@@ -55,7 +54,7 @@ void destroy_node(Node* node) {
 
 DoubleLinkedList* create_linked_list() {
     DoubleLinkedList* p = malloc(sizeof(DoubleLinkedList));
-    if(p != NULL) {
+    if (p != NULL) {
         p->head = NULL;
         p->tail = NULL;
     }
@@ -64,9 +63,9 @@ DoubleLinkedList* create_linked_list() {
 }
 
 void destroy_linked_list(DoubleLinkedList* list) {
-    if(list != NULL) {
+    if (list != NULL) {
         Node* n = list->head;
-        while(n != NULL) {
+        while (n != NULL) {
             Node* prev = n;
             n = prev->next;
             destroy_node(prev);
@@ -77,35 +76,36 @@ void destroy_linked_list(DoubleLinkedList* list) {
 
 bool prepend_data(DoubleLinkedList* list, void* data, size_t data_size) {
     Node* n = create_node(data, data_size);
-    if(n == NULL) 
-        return false;
+    if (n == NULL) return false;
 
     n->next = list->head;
-    if(list->head != NULL)
+    if (list->head != NULL)
         list->head->prev = n;
     else {
         list->tail = n;
-    } 
+    }
 
     list->head = n;
 
     return true;
 }
 
-void in_place_map_from_tail(DoubleLinkedList* list, in_place_map_function fn, void* extra_data) {
-    if(list != NULL) {
+void in_place_map_from_tail(DoubleLinkedList* list, in_place_map_function fn,
+                            void* extra_data) {
+    if (list != NULL) {
         Node* n = list->tail;
-        while(n) {
+        while (n) {
             fn(n->data, extra_data);
             n = n->prev;
         }
     }
 }
 
-void reduce_from_tail(DoubleLinkedList* list, reduce_function fn, void* accumulator, void* extra_data) {
-    if(list != NULL && accumulator != NULL) {
+void reduce_from_tail(DoubleLinkedList* list, reduce_function fn,
+                      void* accumulator, void* extra_data) {
+    if (list != NULL && accumulator != NULL) {
         Node* n = list->tail;
-        while(n) {
+        while (n) {
             fn(n->data, accumulator, extra_data);
             n = n->prev;
         }
@@ -113,21 +113,19 @@ void reduce_from_tail(DoubleLinkedList* list, reduce_function fn, void* accumula
 }
 
 void* get_head(DoubleLinkedList* list) {
-    if(list != NULL && list->head != NULL)
-        return list->head->data;
+    if (list != NULL && list->head != NULL) return list->head->data;
     return NULL;
 }
 
 void* get_tail(DoubleLinkedList* list) {
-    if(list != NULL && list->tail != NULL)
-        return list->tail->data;
+    if (list != NULL && list->tail != NULL) return list->tail->data;
     return NULL;
 }
 
 void for_each(DoubleLinkedList* list, for_each_function fn, void* extra_data) {
-    if(list != NULL) {
+    if (list != NULL) {
         Node* n = list->head;
-        while(n != NULL) {
+        while (n != NULL) {
             fn(n->data, extra_data);
             n = n->next;
         }

@@ -3,13 +3,7 @@
 
 #include <stdint.h>
 
-typedef enum Direction {
-    UP,
-    RIGHT,
-    DOWN,
-    LEFT,
-    INVALID_DIRECTION
-} Direction;
+typedef enum Direction { UP, RIGHT, DOWN, LEFT, INVALID_DIRECTION } Direction;
 
 typedef struct Point {
     int32_t x;

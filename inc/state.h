@@ -23,15 +23,15 @@ struct State {
 /// @param state The state to run the update cycle.
 void update_state(State* state, uint64_t delta);
 
-/// @brief Determines the next state. The function manages the destruction of the previous state if needed.
-/// @param state The managed state. 
+/// @brief Determines the next state. The function manages the destruction of
+/// the previous state if needed.
+/// @param state The managed state.
 /// @return The same state or the next state on success, NULL on failure.
 State* next_state(State* state);
 
 /// @brief Destroys a state.
 /// @param state The state to be destroyed.
 void destroy_state(State* state);
-
 
 /// @brief Draws a state.
 /// @param state The state to be drawn.
