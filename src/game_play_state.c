@@ -3,11 +3,13 @@
 #include <stdio.h>
 #include "inc/snake.h"
 #include "inc/game_play_state.h"
+#include "inc/game_over_state.h"
 #include "inc/pause_state.h"
 #include "inc/io.h"
 
 // I could make it such that there is a difficulty selector... maybe I do it if I feel like.
 #define MIN_MOVE_ACC 500000
+#define POINTS_SNAKE_GROW 10
 
 typedef struct GamePlayStateData {
     uint64_t acc_delta_time; // Accumulator for time delta.
@@ -16,6 +18,7 @@ typedef struct GamePlayStateData {
     State* next_state;
     Snake* snake;
     uint32_t side_size;
+    uint32_t score;
     Button last_button;
     bool button_state[4]; // For checking if it should pause
     bool is_next_state_pause;
@@ -89,11 +92,13 @@ void update_game_play(State* state, uint64_t delta) {
     }
 
     if(has_snake_collided(data->snake, data->side_size, data->side_size)) {
-        // TODO: Game over.
+        data->next_state = create_game_over_state(data->score);
     } else if(has_snake_overlapped_apple(data->snake, &(data->apple)) > 0) {
         grow_snake(data->snake);
+        data->score += POINTS_SNAKE_GROW;
+        data->min_acc_delta_time -= MIN_MOVE_ACC / data->side_size * data->side_size;
         if(snake_parts_count(data->snake) == data->side_size * data->side_size) {
-            // TODO: Game over.
+            data->next_state = create_game_over_state(data->score);
         } else {
             data->apple = spawn_apple(data->snake, data->side_size, data->side_size);
         }
